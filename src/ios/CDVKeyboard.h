@@ -19,6 +19,8 @@
 
 #import <Cordova/CDVPlugin.h>
 
+#import "WebViewController.h"
+
 @interface CDVKeyboard : CDVPlugin {
     @protected
     CGRect _savedWebViewFrame;

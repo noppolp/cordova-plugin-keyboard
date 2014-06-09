@@ -19,6 +19,7 @@
 
 #import "CDVKeyboard.h"
 #import <Cordova/CDVAvailability.h>
+#import "ScreenController.h"
 
 #ifndef __CORDOVA_3_2_0
 #warning "The keyboard plugin is only supported in Cordova 3.2 or greater, it may not work properly in an older version. If you do use this plugin in an older version, make sure the HideKeyboardFormAccessoryBar and KeyboardShrinksView preference values are false."
@@ -37,6 +38,49 @@
 - (id)settingForKey:(NSString*)key
 {
     return [self.commandDelegate.settings objectForKey:[key lowercaseString]];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// AppGyver changes
+// The original plugin was not designed to cater for multiple webviews, so multiple instances
+// of the plugin exists and each instance will respond to the keyboard notifications and perform
+// changes to the webview
+////////////////////////////////////////////////////////////////////////////////////////////////////
+-(BOOL)isCurrentWebView{
+
+    WebViewController* webViewController = (WebViewController*)self.viewController;
+
+    if([webViewController respondsToSelector:@selector(containerViewController)] && [webViewController respondsToSelector:@selector(screenController)]){
+
+        if(webViewController.containerViewController != nil
+           && webViewController.containerViewController == webViewController.screenController.currentLayer
+           && webViewController.view.window
+           && webViewController.isViewLoaded){
+            //NSLog(@"isCurrentWebView -> webViewController -> %@", [webViewController.startURL absoluteString]);
+            return YES;
+        }
+    }
+    return NO;
+}
+
+-(void) keyboardDidShow:(NSNotification*)notif {
+    if(! [self isCurrentWebView]){
+        return;
+    }
+
+    NSNotificationCenter* nc = [NSNotificationCenter defaultCenter];
+    //AGKeyboardDidShowNotification
+    CGRect keyboardFrame = [notif.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    keyboardFrame = [self.viewController.view convertRect:keyboardFrame fromView:nil];
+
+    CGFloat actualKeyboardHeight = keyboardFrame.size.height;
+
+    if(self.hideFormAccessoryBar){
+        actualKeyboardHeight -= _accessoryBarHeight;
+    }
+    [nc postNotification:[NSNotification notificationWithName:@"AGKeyboardDidShowNotification"
+                                                       object:self.viewController
+                                                     userInfo:@{@"actualKeyboardHeight":[NSNumber numberWithFloat:actualKeyboardHeight]}]];
 }
 
 - (void)pluginInitialize
@@ -69,27 +113,48 @@
                                             object:nil
                                              queue:[NSOperationQueue mainQueue]
                                         usingBlock:^(NSNotification* notification) {
+
+            //fire steroids notification for keyboard shown
+            [weakSelf keyboardDidShow:notification];
+
+            if(! [weakSelf isCurrentWebView]){
+                return;
+            }
+
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnShow();"];
             weakSelf.keyboardIsVisible = YES;
+
+
+
         }];
     _keyboardHideObserver = [nc addObserverForName:UIKeyboardDidHideNotification
                                             object:nil
                                              queue:[NSOperationQueue mainQueue]
                                         usingBlock:^(NSNotification* notification) {
+            if(! [weakSelf isCurrentWebView]){
+                return;
+            }
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnHide();"];
             weakSelf.keyboardIsVisible = NO;
+
         }];
 
     _keyboardWillShowObserver = [nc addObserverForName:UIKeyboardWillShowNotification
                                             object:nil
                                              queue:[NSOperationQueue mainQueue]
                                         usingBlock:^(NSNotification* notification) {
+            if(! [weakSelf isCurrentWebView]){
+                return;
+            }
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnShowing();"];
         }];
     _keyboardWillHideObserver = [nc addObserverForName:UIKeyboardWillHideNotification
                                             object:nil
                                              queue:[NSOperationQueue mainQueue]
                                         usingBlock:^(NSNotification* notification) {
+            if(! [weakSelf isCurrentWebView]){
+                return;
+            }
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnHiding();"];
         }];
 }
@@ -205,6 +270,10 @@
 
 - (void)formAccessoryBarKeyboardWillShow:(NSNotification*)notif
 {
+    if(! [self isCurrentWebView]){
+        return;
+    }
+
     if (!_hideFormAccessoryBar) {
         return;
     }
@@ -249,6 +318,9 @@
 
 - (void)formAccessoryBarKeyboardWillHide:(NSNotification*)notif
 {
+    if(! [self isCurrentWebView]){
+        return;
+    }
     // restore the scrollview frame
     self.webView.scrollView.frame = CGRectMake(0, 0, self.webView.frame.size.width, self.webView.frame.size.height);
 }
@@ -257,6 +329,9 @@
 
 - (void)shrinkViewKeyboardWillShow:(NSNotification*)notif
 {
+    if(! [self isCurrentWebView]){
+        return;
+    }
     if (!_shrinkView) {
         return;
     }
@@ -282,6 +357,9 @@
 
 - (void)shrinkViewKeyboardWillHide:(NSNotification*)notif
 {
+    if(! [self isCurrentWebView]){
+        return;
+    }
     if (!_shrinkView) {
         return;
     }
@@ -290,6 +368,9 @@
 
 - (void)shrinkViewKeyboardWillHideHelper:(NSNotification*)notif
 {
+    if(! [self isCurrentWebView]){
+        return;
+    }
     self.webView.scrollView.scrollEnabled = YES;
 
     CGRect keyboardFrame = [notif.userInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
@@ -324,7 +405,7 @@
     if (!([value isKindOfClass:[NSNumber class]])) {
         value = [NSNumber numberWithBool:NO];
     }
-    
+
     self.shrinkView = [value boolValue];
 }
 
@@ -334,7 +415,7 @@
     if (!([value isKindOfClass:[NSNumber class]])) {
         value = [NSNumber numberWithBool:NO];
     }
-    
+
     self.disableScrollingInShrinkView = [value boolValue];
 }
 
@@ -344,9 +425,8 @@
     if (!([value isKindOfClass:[NSNumber class]])) {
         value = [NSNumber numberWithBool:NO];
     }
-    
+
     self.hideFormAccessoryBar = [value boolValue];
 }
-
 
 @end
