@@ -14,9 +14,7 @@
 		<engine name="cordova" version=">=3.2.0" />
 	</engines>
 
-    <js-module src="www/keyboard.js" name="keyboard">
-    	<clobbers target="window.Keyboard" />
-    </js-module>
+    <asset src="www/keyboard.js" target="plugins/keyboard.js"/>
 
     <!-- ios -->
     <platform name="ios">
