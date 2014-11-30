@@ -157,6 +157,27 @@
             }
             [weakSelf.commandDelegate evalJs:@"Keyboard.fireOnHiding();"];
         }];
+        
+    _uiTextFieldKeyPressedObserver = [nc addObserverForName:UITextFieldTextDidChangeNotification
+                                            object:nil
+                                             queue:[NSOperationQueue mainQueue]
+                                        usingBlock:^(NSNotification* notification) {
+            if(! [weakSelf isCurrentWebView]){
+                return;
+            }
+            [weakSelf.commandDelegate evalJs:[NSString stringWithFormat:@"Keyboard.fireOnKeyPressed(%@);", [[notification object]text]]];
+        }];
+        
+    _uiTextViewKeyPressedObserver = [nc addObserverForName:UITextViewTextDidChangeNotification
+                                            object:nil
+                                             queue:[NSOperationQueue mainQueue]
+                                        usingBlock:^(NSNotification* notification) {
+            if(! [weakSelf isCurrentWebView]){
+                return;
+            }
+            [weakSelf.commandDelegate evalJs:[NSString stringWithFormat:@"Keyboard.fireOnKeyPressed(%@);", [[notification object]text]]];
+        }];
+    
 }
 
 // //////////////////////////////////////////////////

@@ -29,7 +29,7 @@
     @protected
     BOOL _hideFormAccessoryBar;
     @protected
-    id _keyboardShowObserver, _keyboardHideObserver, _keyboardWillShowObserver, _keyboardWillHideObserver;
+    id _keyboardShowObserver, _keyboardHideObserver, _keyboardWillShowObserver, _keyboardWillHideObserver, _uiTextFieldKeyPressedObserver, _uiTextViewKeyPressedObserver;
     @protected
     id _hideFormAccessoryBarKeyboardShowObserver, _hideFormAccessoryBarKeyboardHideObserver;
     @protected

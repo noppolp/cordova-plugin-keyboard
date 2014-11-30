@@ -69,6 +69,13 @@ Keyboard.fireOnShowing = function() {
     }
 };
 
+Keyboard.fireOnKeyPressed = function(key) {
+    if(Keyboard.onkeypress) {
+      Keyboard.onkeypress(key);
+      console.log('KeyPressed: ' + key);
+    }
+}
+
 Keyboard.isVisible = false;
 Keyboard.automaticScrollToTopOnHiding = false;
 
